@@ -1,0 +1,1783 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Palm Oracle AI | AI手相オラクル</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' x2='1' y1='0' y2='1'%3E%3Cstop stop-color='%238bd3ff'/%3E%3Cstop offset='.55' stop-color='%23c7a7ff'/%3E%3Cstop offset='1' stop-color='%23f4d58d'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='32' cy='32' r='30' fill='%2308070d'/%3E%3Cpath d='M32 8c7 7 17 17 17 29 0 10-7 18-17 18s-17-8-17-18C15 25 25 15 32 8Z' fill='url(%23g)'/%3E%3Cpath d='M23 36c5-6 12-6 18 0M25 27c4-3 10-3 14 0' fill='none' stroke='%2308070d' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E" />
+  <style>
+    :root {
+      --bg: #08070d;
+      --bg2: #10111a;
+      --panel: rgba(255, 255, 255, 0.065);
+      --panel2: rgba(255, 255, 255, 0.095);
+      --line: rgba(255, 255, 255, 0.14);
+      --line2: rgba(199, 167, 255, 0.34);
+      --text: #f8f5ff;
+      --muted: rgba(248, 245, 255, 0.67);
+      --soft: rgba(248, 245, 255, 0.42);
+      --purple: #c7a7ff;
+      --gold: #f4d58d;
+      --cyan: #8bd3ff;
+      --green: #9ef4c8;
+      --shadow: 0 22px 80px rgba(0, 0, 0, 0.45);
+      --radius-xl: 28px;
+      --radius-lg: 22px;
+      --radius-md: 16px;
+      --radius-sm: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+      min-height: 100%;
+      background: var(--bg);
+    }
+
+    body {
+      margin: 0;
+      min-height: 100%;
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 18% 0%, rgba(139, 211, 255, 0.16), transparent 32%),
+        radial-gradient(circle at 86% 16%, rgba(199, 167, 255, 0.14), transparent 34%),
+        linear-gradient(145deg, #08070d 0%, #0b0d17 46%, #100d16 100%);
+      overflow-x: hidden;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      color: inherit;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.52;
+    }
+
+    .app {
+      position: relative;
+      width: min(100%, 760px);
+      margin: 0 auto;
+      padding: max(18px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+      min-height: 100dvh;
+    }
+
+    .ambient {
+      pointer-events: none;
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      opacity: 0.9;
+    }
+
+    .ambient::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(to bottom, transparent, black 14%, black 82%, transparent);
+    }
+
+    .starfield {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.7;
+    }
+
+    .star {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      border-radius: 999px;
+      background: rgba(244, 213, 141, 0.95);
+      box-shadow: 0 0 12px rgba(244, 213, 141, 0.7);
+      animation: drift var(--dur) linear infinite;
+      transform: translateY(0);
+    }
+
+    @keyframes drift {
+      0% { transform: translate3d(0, 0, 0); opacity: 0.15; }
+      35% { opacity: 0.82; }
+      100% { transform: translate3d(var(--dx), 78px, 0); opacity: 0.08; }
+    }
+
+    .shell {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      gap: 16px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .brand-mark {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .sigil {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background:
+        conic-gradient(from 120deg, rgba(139,211,255,0.95), rgba(199,167,255,0.95), rgba(244,213,141,0.95), rgba(139,211,255,0.95));
+      box-shadow: 0 0 28px rgba(199, 167, 255, 0.32);
+    }
+
+    .sigil::after {
+      content: "";
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid rgba(8, 7, 13, 0.9);
+      background: rgba(248, 245, 255, 0.92);
+    }
+
+    .notice-pill {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.045);
+      border-radius: 999px;
+      padding: 8px 11px;
+      white-space: nowrap;
+    }
+
+    .screen {
+      display: none;
+      animation: enter 0.48s cubic-bezier(.2,.8,.2,1) both;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    @keyframes enter {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero {
+      min-height: calc(100dvh - 86px);
+      display: grid;
+      align-content: center;
+      gap: 18px;
+      padding: 26px 0 18px;
+    }
+
+    .hero-card,
+    .glass-card,
+    .upload-stage,
+    .result-card,
+    .score-card {
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(145deg, rgba(255,255,255,0.095), rgba(255,255,255,0.035)),
+        linear-gradient(180deg, rgba(199,167,255,0.08), rgba(139,211,255,0.025));
+      box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.12);
+      backdrop-filter: blur(18px);
+    }
+
+    .hero-card {
+      position: relative;
+      overflow: hidden;
+      border-radius: var(--radius-xl);
+      padding: 30px 24px;
+    }
+
+    .hero-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(115deg, rgba(199,167,255,0.18), transparent 34%),
+        linear-gradient(295deg, rgba(244,213,141,0.12), transparent 32%);
+      opacity: 0.9;
+      pointer-events: none;
+    }
+
+    .hero-inner {
+      position: relative;
+      display: grid;
+      gap: 18px;
+    }
+
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--gold);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 28px;
+      height: 1px;
+      background: linear-gradient(90deg, var(--gold), transparent);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(44px, 11vw, 76px);
+      line-height: 0.88;
+      letter-spacing: 0;
+      max-width: 680px;
+    }
+
+    .title-grad {
+      display: block;
+      background: linear-gradient(110deg, #fff 0%, var(--purple) 45%, var(--gold) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 0 34px rgba(199, 167, 255, 0.16);
+    }
+
+    .lead {
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(15px, 3.7vw, 18px);
+      line-height: 1.85;
+      max-width: 620px;
+    }
+
+    .hero-actions,
+    .actions {
+      display: grid;
+      gap: 12px;
+    }
+
+    .primary-btn,
+    .secondary-btn,
+    .share-btn {
+      min-height: 54px;
+      border-radius: 18px;
+      padding: 15px 18px;
+      font-weight: 900;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+      user-select: none;
+    }
+
+    .primary-btn {
+      color: #100d16;
+      background:
+        linear-gradient(135deg, var(--gold), #ffd6e2 50%, var(--purple));
+      box-shadow: 0 18px 44px rgba(199, 167, 255, 0.24), 0 10px 28px rgba(244, 213, 141, 0.14);
+    }
+
+    .secondary-btn,
+    .share-btn {
+      background: rgba(255,255,255,0.065);
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+
+    .primary-btn:active,
+    .secondary-btn:active,
+    .share-btn:active {
+      transform: scale(0.985);
+    }
+
+    .tips {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .tip {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255,255,255,0.045);
+      padding: 13px;
+      color: var(--muted);
+      line-height: 1.55;
+      min-height: 74px;
+    }
+
+    .tip strong {
+      display: block;
+      color: var(--text);
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+
+    .disclaimer {
+      border: 1px solid rgba(244, 213, 141, 0.22);
+      background: rgba(244, 213, 141, 0.055);
+      color: rgba(248, 245, 255, 0.76);
+      border-radius: 16px;
+      padding: 13px 14px;
+      font-size: 12px;
+      line-height: 1.65;
+    }
+
+    .upload-stage {
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+    }
+
+    .stage-head {
+      padding: 20px 18px 0;
+      display: grid;
+      gap: 8px;
+    }
+
+    .screen-title {
+      margin: 0;
+      font-size: clamp(28px, 7vw, 42px);
+      line-height: 1.04;
+    }
+
+    .screen-copy {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.75;
+    }
+
+    .dropzone {
+      margin: 18px;
+      position: relative;
+      border-radius: 24px;
+      border: 1px dashed rgba(199, 167, 255, 0.48);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.025));
+      min-height: 310px;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+
+    .dropzone.has-image {
+      border-style: solid;
+      border-color: rgba(139, 211, 255, 0.34);
+    }
+
+    .empty-upload {
+      padding: 24px;
+      text-align: center;
+      display: grid;
+      gap: 13px;
+      justify-items: center;
+    }
+
+    .hand-icon {
+      width: 92px;
+      height: 112px;
+      border-radius: 38px 38px 44px 44px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background:
+        radial-gradient(circle at 50% 38%, rgba(248,245,255,0.22), transparent 34%),
+        linear-gradient(145deg, rgba(199,167,255,0.26), rgba(139,211,255,0.08));
+      position: relative;
+      box-shadow: inset 0 0 22px rgba(255,255,255,0.07), 0 0 40px rgba(199,167,255,0.18);
+    }
+
+    .hand-icon::before,
+    .hand-icon::after {
+      content: "";
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(244,213,141,0.9), transparent);
+      transform: rotate(-12deg);
+    }
+
+    .hand-icon::before { top: 43px; }
+    .hand-icon::after { top: 66px; transform: rotate(14deg); }
+
+    .file-input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .preview-wrap {
+      position: absolute;
+      inset: 0;
+      display: none;
+      background: #05050a;
+    }
+
+    .dropzone.has-image .preview-wrap {
+      display: block;
+    }
+
+    #previewCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: contain;
+    }
+
+    .scan-overlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px);
+      background-size: 100% 5px;
+      mix-blend-mode: screen;
+    }
+
+    .dropzone.has-image .scan-overlay,
+    .analyzing .scan-overlay {
+      display: block;
+    }
+
+    .scan-overlay::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 78px;
+      background: linear-gradient(180deg, transparent, rgba(139,211,255,0.48), transparent);
+      filter: blur(1px);
+      animation: scan 2.2s ease-in-out infinite;
+    }
+
+    @keyframes scan {
+      0%, 100% { transform: translateY(-90px); }
+      50% { transform: translateY(calc(100% + 20px)); }
+    }
+
+    .upload-controls {
+      padding: 0 18px 18px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .status {
+      min-height: 22px;
+      margin: 0 18px 18px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .analysis-wrap {
+      min-height: calc(100dvh - 86px);
+      display: grid;
+      place-items: center;
+      padding: 30px 0;
+    }
+
+    .analysis-card {
+      width: 100%;
+      border-radius: var(--radius-xl);
+      padding: 20px;
+      border: 1px solid var(--line2);
+      background:
+        linear-gradient(145deg, rgba(199,167,255,0.12), rgba(139,211,255,0.045)),
+        rgba(255,255,255,0.045);
+      box-shadow: var(--shadow);
+    }
+
+    .analysis-preview {
+      position: relative;
+      height: min(60vh, 470px);
+      border-radius: 24px;
+      overflow: hidden;
+      background: #05050a;
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    #analysisCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: contain;
+    }
+
+    .analysis-text {
+      margin-top: 18px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .analysis-text h2 {
+      margin: 0;
+      font-size: clamp(25px, 6vw, 38px);
+      line-height: 1.1;
+    }
+
+    .progress {
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.09);
+      border: 1px solid rgba(255,255,255,0.1);
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--cyan), var(--purple), var(--gold));
+      box-shadow: 0 0 26px rgba(139, 211, 255, 0.42);
+      transition: width 0.22s ease;
+    }
+
+    .result-hero {
+      display: grid;
+      gap: 16px;
+      padding: 16px 0 24px;
+    }
+
+    .result-card {
+      position: relative;
+      border-radius: var(--radius-xl);
+      padding: 22px;
+      overflow: hidden;
+    }
+
+    .result-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(125deg, rgba(244,213,141,0.16), transparent 30%),
+        linear-gradient(305deg, rgba(139,211,255,0.13), transparent 34%);
+      pointer-events: none;
+    }
+
+    .result-card > * {
+      position: relative;
+    }
+
+    .type-label {
+      color: var(--gold);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .type-name {
+      margin: 0;
+      font-size: clamp(34px, 9vw, 60px);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .type-summary {
+      margin: 16px 0 0;
+      color: var(--muted);
+      line-height: 1.9;
+      font-size: 15px;
+    }
+
+    .mini-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .metric {
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 15px;
+      padding: 11px;
+      background: rgba(255,255,255,0.045);
+    }
+
+    .metric b {
+      display: block;
+      font-size: 20px;
+      color: var(--text);
+      line-height: 1.15;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+      display: block;
+      margin-top: 5px;
+    }
+
+    .section-title {
+      margin: 8px 0 0;
+      color: var(--text);
+      font-size: 20px;
+      letter-spacing: 0;
+    }
+
+    .cards {
+      display: grid;
+      gap: 12px;
+    }
+
+    .oracle-card {
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: rgba(255,255,255,0.055);
+      padding: 16px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+
+    .oracle-card h3 {
+      margin: 0 0 8px;
+      font-size: 15px;
+      color: var(--gold);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .oracle-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.78;
+      font-size: 14px;
+    }
+
+    .score-grid {
+      display: grid;
+      gap: 11px;
+    }
+
+    .score-card {
+      border-radius: 18px;
+      padding: 14px;
+    }
+
+    .score-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .score-name {
+      font-weight: 900;
+      letter-spacing: 0.02em;
+    }
+
+    .score-value {
+      color: var(--gold);
+      font-weight: 950;
+      font-size: 20px;
+    }
+
+    .bar {
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--cyan), var(--purple), var(--gold));
+      transition: width 1s cubic-bezier(.2,.9,.2,1);
+    }
+
+    .reading-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .line-reading {
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 18px;
+      background: rgba(255,255,255,0.045);
+      padding: 14px;
+      display: grid;
+      gap: 7px;
+    }
+
+    .line-reading strong {
+      color: var(--cyan);
+      font-size: 14px;
+    }
+
+    .line-reading span {
+      color: var(--muted);
+      line-height: 1.65;
+      font-size: 13px;
+    }
+
+    .combo-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .combo-item {
+      border-left: 3px solid var(--purple);
+      padding: 12px 13px;
+      border-radius: 0 16px 16px 0;
+      background: rgba(199,167,255,0.07);
+      color: var(--muted);
+      line-height: 1.72;
+      font-size: 14px;
+    }
+
+    .combo-item b {
+      color: var(--text);
+    }
+
+    .result-actions {
+      display: grid;
+      gap: 12px;
+      padding-bottom: 8px;
+    }
+
+    footer {
+      color: var(--soft);
+      text-align: center;
+      font-size: 12px;
+      padding: 18px 0 4px;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: max(16px, env(safe-area-inset-bottom));
+      transform: translateX(-50%) translateY(18px);
+      z-index: 20;
+      opacity: 0;
+      pointer-events: none;
+      width: min(calc(100% - 32px), 520px);
+      border: 1px solid rgba(244, 213, 141, 0.3);
+      background: rgba(16, 14, 24, 0.94);
+      color: var(--text);
+      border-radius: 18px;
+      padding: 13px 15px;
+      box-shadow: var(--shadow);
+      transition: opacity 0.24s ease, transform 0.24s ease;
+      line-height: 1.6;
+      font-size: 13px;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (min-width: 650px) {
+      .hero-actions,
+      .actions,
+      .result-actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .result-actions .primary-btn {
+        grid-column: span 2;
+      }
+
+      .cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .cards .oracle-card:first-child {
+        grid-column: span 2;
+      }
+
+      .score-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .reading-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 440px) {
+      .app {
+        padding-left: 12px;
+        padding-right: 12px;
+      }
+
+      .topbar {
+        font-size: 10px;
+      }
+
+      .notice-pill {
+        padding: 7px 9px;
+      }
+
+      .hero-card {
+        padding: 24px 18px;
+      }
+
+      .tips {
+        grid-template-columns: 1fr;
+      }
+
+      .upload-controls {
+        grid-template-columns: 1fr;
+      }
+
+      .mini-metrics {
+        grid-template-columns: 1fr;
+      }
+
+      .dropzone {
+        min-height: 280px;
+        margin: 14px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient" aria-hidden="true"></div>
+  <div class="starfield" id="starfield" aria-hidden="true"></div>
+
+  <main class="app">
+    <div class="shell">
+      <header class="topbar">
+        <div class="brand-mark"><span class="sigil" aria-hidden="true"></span><span>Palm Oracle AI</span></div>
+        <div class="notice-pill">Private Canvas Reading</div>
+      </header>
+
+      <section class="screen active" id="startScreen">
+        <div class="hero">
+          <div class="hero-card">
+            <div class="hero-inner">
+              <div class="eyebrow">AI手相オラクル</div>
+              <h1><span class="title-grad">Palm Oracle</span><span>AI</span></h1>
+              <p class="lead">手のひら写真から、生命線・知能線・感情線・運命線の“印象”をAI風に読み解き、性格・仕事運・恋愛傾向・金運・今週のラッキーアクションを導きます。</p>
+              <div class="hero-actions">
+                <button class="primary-btn" type="button" id="pickFromHero">手の写真を選ぶ</button>
+                <button class="secondary-btn" type="button" id="howToBtn">撮影のコツを見る</button>
+              </div>
+              <div class="tips" id="tips">
+                <div class="tip"><strong>明るい場所</strong>影が少ない場所で、手のひら全体を写してください。</div>
+                <div class="tip"><strong>手の向き</strong>左手・右手どちらでもOK。指先から手首まで入れると綺麗です。</div>
+                <div class="tip"><strong>背景</strong>無地に近い背景だと、AI風スキャン演出が映えます。</div>
+                <div class="tip"><strong>プライバシー</strong>画像は端末内だけで処理され、外部には送信されません。</div>
+              </div>
+              <p class="disclaimer">※この診断はエンタメ目的です。医学的・科学的な診断ではありません。画像は端末内で処理され、外部には送信されません。</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="uploadScreen">
+        <div class="upload-stage">
+          <div class="stage-head">
+            <p class="eyebrow">Step 01 / Upload</p>
+            <h2 class="screen-title">手のひらを選んでください</h2>
+            <p class="screen-copy">写真を選ぶと、その場でプレビューします。解析はすべてブラウザ内で完結します。</p>
+          </div>
+
+          <input class="file-input" id="fileInput" type="file" accept="image/*" />
+          <div class="dropzone" id="dropzone">
+            <div class="empty-upload">
+              <div class="hand-icon" aria-hidden="true"></div>
+              <button class="primary-btn" type="button" id="pickImageBtn">写真を選ぶ</button>
+              <p class="screen-copy">iPhone / Android ではカメラまたは写真フォルダから選べます。</p>
+            </div>
+            <div class="preview-wrap">
+              <canvas id="previewCanvas"></canvas>
+              <div class="scan-overlay" aria-hidden="true"></div>
+            </div>
+          </div>
+
+          <p class="status" id="uploadStatus">まだ画像は選択されていません。</p>
+          <div class="upload-controls">
+            <button class="secondary-btn" type="button" id="repickBtn">写真を選び直す</button>
+            <button class="primary-btn" type="button" id="analyzeBtn" disabled>この写真で占う</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="analysisScreen">
+        <div class="analysis-wrap">
+          <div class="analysis-card">
+            <div class="analysis-preview analyzing">
+              <canvas id="analysisCanvas"></canvas>
+              <div class="scan-overlay" aria-hidden="true"></div>
+            </div>
+            <div class="analysis-text">
+              <p class="eyebrow">Step 02 / Oracle Scan</p>
+              <h2 id="analysisTitle">生命線を解析中…</h2>
+              <p class="screen-copy" id="analysisCopy">手のひらの明るさ、コントラスト、線の密度をブラウザ内で読み取っています。</p>
+              <div class="progress"><div class="progress-fill" id="progressFill"></div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" id="resultScreen">
+        <div class="result-hero">
+          <div class="result-card">
+            <div class="type-label">Your Oracle Type</div>
+            <h2 class="type-name" id="typeName">星読みクリエイター型</h2>
+            <p class="type-summary" id="typeSummary"></p>
+            <div class="mini-metrics">
+              <div class="metric"><b id="dominantLine">知能線</b><span>強く出た線</span></div>
+              <div class="metric"><b id="dominantMount">太陽丘</b><span>強く出た丘</span></div>
+              <div class="metric"><b id="oracleMood">創作運</b><span>今週の流れ</span></div>
+            </div>
+          </div>
+
+          <h2 class="section-title">5つのオラクル結果</h2>
+          <div class="cards" id="resultCards"></div>
+
+          <h2 class="section-title">スコア</h2>
+          <div class="score-grid" id="scoreGrid"></div>
+
+          <h2 class="section-title">線と丘の読み</h2>
+          <div class="reading-grid" id="lineGrid"></div>
+
+          <h2 class="section-title">組み合わせリーディング</h2>
+          <div class="combo-list" id="comboList"></div>
+
+          <p class="disclaimer">※この診断はエンタメ目的です。医学的・科学的な診断ではありません。健康、寿命、病気、死期を判断するものではありません。</p>
+
+          <div class="result-actions">
+            <button class="primary-btn" type="button" id="shareBtn">Xで結果をシェア</button>
+            <button class="secondary-btn" type="button" id="retryBtn">もう一度占う</button>
+            <button class="share-btn" type="button" id="noteBtn">このアプリの作り方を見る</button>
+          </div>
+        </div>
+      </section>
+
+      <footer>Palm Oracle AI by Haku | @ai_side_haku</footer>
+    </div>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const APP_URL = "https://haku-ai-os.github.io/palm-oracle-ai/";
+      const NOTE_URL = "https://note.com/yoshi_pyjava";
+      const MAX_IMAGE_SIDE = 1200;
+
+      const $ = (id) => document.getElementById(id);
+
+      const screens = {
+        start: $("startScreen"),
+        upload: $("uploadScreen"),
+        analysis: $("analysisScreen"),
+        result: $("resultScreen")
+      };
+
+      const fileInput = $("fileInput");
+      const dropzone = $("dropzone");
+      const previewCanvas = $("previewCanvas");
+      const previewCtx = previewCanvas.getContext("2d", { willReadFrequently: true });
+      const analysisCanvas = $("analysisCanvas");
+      const analysisCtx = analysisCanvas.getContext("2d", { willReadFrequently: true });
+      const uploadStatus = $("uploadStatus");
+      const analyzeBtn = $("analyzeBtn");
+      const progressFill = $("progressFill");
+      const analysisTitle = $("analysisTitle");
+      const analysisCopy = $("analysisCopy");
+      const toast = $("toast");
+
+      let selectedImage = null;
+      let selectedFileName = "";
+      let latestReading = null;
+      let toastTimer = null;
+
+      const analysisSteps = [
+        "生命線を解析中…",
+        "知能線を解析中…",
+        "感情線を解析中…",
+        "運命線を解析中…",
+        "太陽線と水星線を照合中…",
+        "金星丘と月丘のバランスを確認中…",
+        "AIオラクル結果を生成中…"
+      ];
+
+      const scoreNames = [
+        ["intuition", "直感力"],
+        ["creativity", "創造力"],
+        ["action", "行動力"],
+        ["stability", "安定力"],
+        ["empathy", "共感力"]
+      ];
+
+      const lineLabels = {
+        life: "生命線",
+        head: "知能線",
+        heart: "感情線",
+        fate: "運命線",
+        sun: "太陽線",
+        mercury: "水星線",
+        venus: "金星丘",
+        luna: "月丘"
+      };
+
+      const typeData = [
+        {
+          id: "star_creator",
+          name: "星読みクリエイター型",
+          mood: "創作運",
+          condition: (s) => s.creativity + s.intuition + s.empathy * 0.35,
+          summary: "あなたは、ひらめきと美意識を作品に変えるタイプです。何気ない違和感や小さな感情を拾い上げ、言葉・デザイン・動画・企画として形にする力があります。",
+          cards: {
+            personality: "静かな観察力と、ふっと降りてくる直感が同居しています。人の真似よりも、自分だけの雰囲気を整えたときに魅力が強く出ます。",
+            work: "企画、発信、デザイン、AI制作、文章、動画編集と相性が良い流れです。完成度を上げるより先に、まず1つ外へ出すことで運が動きます。",
+            love: "恋愛では、言葉の温度や空気感を大切にします。急展開よりも、価値観や会話のリズムが合う相手に心が開きやすいでしょう。",
+            money: "金運は、創作物・投稿・小さな販売導線から育つタイプです。好きな世界観を見える形にすると、チャンスが集まりやすくなります。",
+            action: "今週は、頭の中のアイデアを1枚の画像、1本の短い投稿、1つのミニアプリに落とすことがラッキーアクションです。"
+          }
+        },
+        {
+          id: "intuition_driver",
+          name: "直感ドリブン型",
+          mood: "突破運",
+          condition: (s) => s.intuition + s.action + s.creativity * 0.25,
+          summary: "あなたは、考えすぎる前に本質をつかむタイプです。迷ったときほど、最初に感じた違和感や高揚感が進む方向を教えてくれます。",
+          cards: {
+            personality: "反応速度が早く、場の空気を読む力があります。細かく計画を固めるより、動きながら調整するほうが実力を出しやすいでしょう。",
+            work: "新規企画、営業、SNS運用、ライブ感のある発信と好相性です。短時間で試し、反応を見て磨く進め方が強みになります。",
+            love: "恋愛では、会った瞬間の空気やテンポを重視します。相手に合わせすぎず、心地よい距離感を言葉にすると安定します。",
+            money: "金運はスピード感のある小さな挑戦から開きます。思いついた副業案や投稿企画を48時間以内に試すと流れが変わりやすいでしょう。",
+            action: "今週は、保存していたアイデアを1つ選んで即実行。完璧に整えるより、まず世に出すことが開運の鍵です。"
+          }
+        },
+        {
+          id: "strategic_leader",
+          name: "戦略家リーダー型",
+          mood: "仕事運",
+          condition: (s) => s.action + s.stability + s.intuition * 0.2,
+          summary: "あなたは、状況を整理し、必要な順番で前へ進めるタイプです。感覚だけで動くより、勝ち筋を見つけてから力を集中させるほど結果が出ます。",
+          cards: {
+            personality: "責任感があり、混乱した場面でも軸を作れる人です。周囲から頼られやすいぶん、ひとりで抱え込みすぎないことが運を守ります。",
+            work: "ディレクション、プロジェクト管理、商品設計、仕組み化と相性があります。人のアイデアを収益導線へ変える力もあります。",
+            love: "恋愛では、安心感と信頼を大切にします。相手の言葉だけでなく、行動の一貫性を見ることで良い関係を選べます。",
+            money: "金運は、継続できる仕組みから伸びるタイプです。記録、改善、テンプレート化が収益の土台になります。",
+            action: "今週は、やることを3つに絞り、1つは今日終わらせてください。小さな完了が次のチャンスを呼びます。"
+          }
+        },
+        {
+          id: "healing_supporter",
+          name: "癒しのサポーター型",
+          mood: "対人運",
+          condition: (s) => s.empathy + s.stability + s.intuition * 0.25,
+          summary: "あなたは、人の気持ちを受け止めながら、静かに場を整えるタイプです。派手さよりも、安心して話せる雰囲気そのものが才能です。",
+          cards: {
+            personality: "共感力が高く、相手の言葉にならない疲れや迷いに気づけます。自分の回復時間を確保すると魅力が長持ちします。",
+            work: "相談、文章、教育、サポート、コミュニティ運営と相性があります。人の問題をわかりやすく整理する役割で評価されます。",
+            love: "恋愛では、深い信頼をゆっくり育てます。尽くしすぎる前に、自分が安心できているかを確認すると良い関係になります。",
+            money: "金運は、人の不安を軽くするサービスから育ちます。チェックリスト、診断、テンプレート、伴走型の発信が向いています。",
+            action: "今週は、誰かのために作ったメモや知識を、見やすい形にまとめると運が開きます。"
+          }
+        },
+        {
+          id: "future_engineer",
+          name: "未来開拓エンジニア型",
+          mood: "開発運",
+          condition: (s) => s.creativity + s.action + s.stability * 0.45,
+          summary: "あなたは、未来の道具を自分の手で作るタイプです。仕組み化、AI活用、プロトタイプ制作に強く、未完成から価値を見つけられます。",
+          cards: {
+            personality: "好奇心と実装力が同時に動きます。難しいものを分解して、使える形にすることに喜びを感じるでしょう。",
+            work: "アプリ制作、AIワークフロー、自動化、コンテンツ商品化と相性があります。人が面倒に感じる工程を軽くするほど評価されます。",
+            love: "恋愛では、会話の中に学びや発見がある相手に惹かれやすいです。一緒に成長できる関係が心を安定させます。",
+            money: "金運は、作ったものを公開し、改善し続けるほど伸びます。小さなWebアプリやテンプレート販売に追い風があります。",
+            action: "今週は、眠っているアイデアを1つだけデモにしてください。完成品より、触れる試作品が運を進めます。"
+          }
+        },
+        {
+          id: "sensitive_artist",
+          name: "感性アーティスト型",
+          mood: "表現運",
+          condition: (s) => s.creativity + s.empathy + s.intuition * 0.35,
+          summary: "あなたは、感情を色や言葉や空気に変換するタイプです。説明しきれない気配を形にする力があり、見る人の記憶に残る表現ができます。",
+          cards: {
+            personality: "繊細な受信力があります。外の刺激を受け取りやすいので、世界観を整えた場所で力が回復しやすいでしょう。",
+            work: "映像、文章、音、デザイン、占い系コンテンツ、世界観のあるSNS発信と相性があります。余白やトーンの作り方が武器です。",
+            love: "恋愛では、深く共鳴できる関係を求めます。気持ちを溜め込まず、小さく言語化すると関係が柔らかくなります。",
+            money: "金運は、感性をパッケージ化した商品から開きます。画像、文章、診断、世界観テンプレートに可能性があります。",
+            action: "今週は、好きな色・音・言葉を集めた小さな作品ページを作ると、次の流れが見えてきます。"
+          }
+        },
+        {
+          id: "quiet_builder",
+          name: "静かな努力家型",
+          mood: "継続運",
+          condition: (s) => s.stability + s.empathy * 0.45 + s.action * 0.25,
+          summary: "あなたは、見えない場所で積み上げる力を持つタイプです。短期的な派手さよりも、淡々と続けたものがあとから大きな信頼になります。",
+          cards: {
+            personality: "落ち着きと粘り強さがあります。すぐに結果が出ない時期でも、必要な改善を続けられる人です。",
+            work: "運用、管理、編集、品質チェック、学習記録、長期プロジェクトに向いています。信頼を蓄積するほど仕事運が伸びます。",
+            love: "恋愛では、穏やかで誠実な関係を大切にします。派手な言葉より、日々の小さな行動に愛情を感じやすいでしょう。",
+            money: "金運は、固定費の見直し、習慣化、長期型の商品作りから強くなります。収益管理との相性も良いです。",
+            action: "今週は、続けたいことを1つだけ記録化してください。数字で見えるようにすると運が安定します。"
+          }
+        },
+        {
+          id: "chance_magnet",
+          name: "チャンス引き寄せ型",
+          mood: "好機運",
+          condition: (s) => averageScores(s) + balanceScore(s) * 0.9,
+          summary: "あなたは、複数の流れを自然に結びつけるタイプです。人・情報・タイミングが重なったときに、思いがけないチャンスをつかみます。",
+          cards: {
+            personality: "柔軟性があり、場に合わせて自分の役割を変えられます。偶然をただの偶然で終わらせず、次の行動につなげる力があります。",
+            work: "コラボ、紹介、SNSでの発信、イベント、コミュニティとの相性があります。自分ひとりで完結させないほど運が広がります。",
+            love: "恋愛では、予想外の接点から縁が生まれやすいタイプです。自然体の会話から関係が進むことがあります。",
+            money: "金運は、人との接点から入る情報にヒントがあります。紹介、共同制作、期間限定の企画に注目してください。",
+            action: "今週は、気になっていた人や場所に軽く連絡してみてください。小さな接点が次の扉になります。"
+          }
+        }
+      ];
+
+      function showScreen(name) {
+        Object.entries(screens).forEach(([key, el]) => {
+          el.classList.toggle("active", key === name);
+        });
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove("show"), 3600);
+      }
+
+      function clamp(value, min = 0, max = 100) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function round(value) {
+        return Math.round(clamp(value));
+      }
+
+      function averageScores(scores) {
+        return (scores.intuition + scores.creativity + scores.action + scores.stability + scores.empathy) / 5;
+      }
+
+      function balanceScore(scores) {
+        const values = Object.values(scores);
+        const avg = values.reduce((a, b) => a + b, 0) / values.length;
+        const variance = values.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / values.length;
+        return clamp(100 - Math.sqrt(variance) * 4);
+      }
+
+      function seededJitter(seed, salt, range = 6) {
+        const x = Math.sin(seed * 999 + salt * 77.7) * 10000;
+        return (x - Math.floor(x) - 0.5) * range;
+      }
+
+      function buildStars() {
+        const field = $("starfield");
+        const total = 54;
+        const frag = document.createDocumentFragment();
+        for (let i = 0; i < total; i += 1) {
+          const star = document.createElement("span");
+          star.className = "star";
+          star.style.left = `${Math.random() * 100}%`;
+          star.style.top = `${Math.random() * 100}%`;
+          star.style.setProperty("--dx", `${(Math.random() - 0.5) * 26}px`);
+          star.style.setProperty("--dur", `${5 + Math.random() * 8}s`);
+          star.style.animationDelay = `${Math.random() * -8}s`;
+          if (i % 3 === 0) {
+            star.style.background = "rgba(139, 211, 255, 0.9)";
+          }
+          if (i % 7 === 0) {
+            star.style.width = "1px";
+            star.style.height = "1px";
+          }
+          frag.appendChild(star);
+        }
+        field.appendChild(frag);
+      }
+
+      function chooseImage() {
+        fileInput.click();
+      }
+
+      function resetImage() {
+        selectedImage = null;
+        selectedFileName = "";
+        fileInput.value = "";
+        analyzeBtn.disabled = true;
+        dropzone.classList.remove("has-image");
+        uploadStatus.textContent = "まだ画像は選択されていません。";
+        previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+      }
+
+      function loadImageFromFile(file) {
+        if (!file) {
+          showToast("画像が選択されていません。");
+          return;
+        }
+        if (!file.type || !file.type.startsWith("image/")) {
+          showToast("画像ファイルを選んでください。");
+          return;
+        }
+
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          selectedImage = img;
+          selectedFileName = file.name || "hand-image";
+          drawContainedImage(previewCanvas, previewCtx, img);
+          drawContainedImage(analysisCanvas, analysisCtx, img);
+          dropzone.classList.add("has-image");
+          analyzeBtn.disabled = false;
+          uploadStatus.textContent = `選択中: ${selectedFileName} / 端末内プレビュー完了。`;
+          showScreen("upload");
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          showToast("画像の読み込みに失敗しました。別の写真を試してください。");
+        };
+        img.src = url;
+      }
+
+      function drawContainedImage(canvas, ctx, img) {
+        const box = canvas.getBoundingClientRect();
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const width = Math.max(320, Math.round((box.width || 420) * dpr));
+        const height = Math.max(280, Math.round((box.height || 360) * dpr));
+        canvas.width = width;
+        canvas.height = height;
+        ctx.clearRect(0, 0, width, height);
+        ctx.fillStyle = "#05050a";
+        ctx.fillRect(0, 0, width, height);
+
+        const scale = Math.min(width / img.naturalWidth, height / img.naturalHeight);
+        const drawW = img.naturalWidth * scale;
+        const drawH = img.naturalHeight * scale;
+        const x = (width - drawW) / 2;
+        const y = (height - drawH) / 2;
+        ctx.drawImage(img, x, y, drawW, drawH);
+
+        const glow = ctx.createLinearGradient(0, 0, width, height);
+        glow.addColorStop(0, "rgba(199,167,255,0.12)");
+        glow.addColorStop(0.55, "rgba(139,211,255,0.04)");
+        glow.addColorStop(1, "rgba(244,213,141,0.10)");
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, width, height);
+      }
+
+      function resizeForAnalysis(img) {
+        const scale = Math.min(1, MAX_IMAGE_SIDE / Math.max(img.naturalWidth, img.naturalHeight));
+        const width = Math.max(64, Math.round(img.naturalWidth * scale));
+        const height = Math.max(64, Math.round(img.naturalHeight * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        ctx.drawImage(img, 0, 0, width, height);
+        return { canvas, ctx, width, height };
+      }
+
+      function analyzeImage(img) {
+        const { ctx, width, height } = resizeForAnalysis(img);
+        const data = ctx.getImageData(0, 0, width, height).data;
+        const lum = new Float32Array(width * height);
+        let sum = 0;
+        let sumSq = 0;
+        let warmSum = 0;
+        let satSum = 0;
+        let rSum = 0;
+        let gSum = 0;
+        let bSum = 0;
+
+        for (let i = 0, p = 0; i < data.length; i += 4, p += 1) {
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+          const value = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+          lum[p] = value;
+          sum += value;
+          sumSq += value * value;
+          warmSum += (r - b + 255) / 510;
+          const max = Math.max(r, g, b);
+          const min = Math.min(r, g, b);
+          satSum += max === 0 ? 0 : (max - min) / max;
+          rSum += r;
+          gSum += g;
+          bSum += b;
+        }
+
+        const count = width * height;
+        const brightness = sum / count;
+        const variance = Math.max(0, sumSq / count - brightness * brightness);
+        const contrast = Math.sqrt(variance);
+        const warm = warmSum / count;
+        const saturation = satSum / count;
+        const avgR = rSum / count;
+        const avgG = gSum / count;
+        const avgB = bSum / count;
+        const cool = clamp((avgB - avgR + 90) / 180, 0, 1);
+
+        const regions = {
+          top: { edge: 0, n: 0 },
+          middle: { edge: 0, n: 0 },
+          bottom: { edge: 0, n: 0 },
+          center: { edge: 0, n: 0 },
+          leftLower: { edge: 0, n: 0 },
+          rightLower: { edge: 0, n: 0 },
+          upperRight: { edge: 0, n: 0 },
+          right: { edge: 0, n: 0 }
+        };
+        let edgeTotal = 0;
+        let verticalTotal = 0;
+        let horizontalTotal = 0;
+        let edgeCount = 0;
+
+        for (let y = 1; y < height; y += 1) {
+          for (let x = 1; x < width; x += 1) {
+            const idx = y * width + x;
+            const dx = Math.abs(lum[idx] - lum[idx - 1]);
+            const dy = Math.abs(lum[idx] - lum[idx - width]);
+            const edge = (dx + dy) / 2;
+            edgeTotal += edge;
+            verticalTotal += dy;
+            horizontalTotal += dx;
+            edgeCount += 1;
+
+            const yRatio = y / height;
+            const xRatio = x / width;
+            const bucket = yRatio < 0.33 ? regions.top : yRatio < 0.66 ? regions.middle : regions.bottom;
+            bucket.edge += edge;
+            bucket.n += 1;
+
+            if (xRatio > 0.32 && xRatio < 0.68 && yRatio > 0.25 && yRatio < 0.78) {
+              regions.center.edge += edge;
+              regions.center.n += 1;
+            }
+            if (xRatio < 0.46 && yRatio > 0.48) {
+              regions.leftLower.edge += edge;
+              regions.leftLower.n += 1;
+            }
+            if (xRatio > 0.54 && yRatio > 0.48) {
+              regions.rightLower.edge += edge;
+              regions.rightLower.n += 1;
+            }
+            if (xRatio > 0.55 && yRatio < 0.46) {
+              regions.upperRight.edge += edge;
+              regions.upperRight.n += 1;
+            }
+            if (xRatio > 0.62) {
+              regions.right.edge += edge;
+              regions.right.n += 1;
+            }
+          }
+        }
+
+        const edgeAvg = edgeTotal / Math.max(1, edgeCount);
+        Object.values(regions).forEach((region) => {
+          region.value = region.edge / Math.max(1, region.n);
+        });
+
+        const seed = brightness * 0.13 + contrast * 0.31 + edgeAvg * 0.57 + warm * 19 + saturation * 23 + width * 0.001 + height * 0.002;
+        const balance = 1 - Math.min(1, Math.abs(regions.top.value - regions.bottom.value) / 42);
+        const verticalBias = verticalTotal / Math.max(1, verticalTotal + horizontalTotal);
+
+        const rawScores = {
+          intuition: 45 + regions.top.value * 1.35 + cool * 18 + saturation * 16 + seededJitter(seed, 1),
+          creativity: 42 + contrast * 0.48 + saturation * 30 + regions.upperRight.value * 0.92 + seededJitter(seed, 2),
+          action: 40 + regions.center.value * 1.25 + edgeAvg * 0.7 + verticalBias * 13 + seededJitter(seed, 3),
+          stability: 44 + balance * 25 + (100 - Math.min(100, contrast)) * 0.23 + Math.max(0, 170 - Math.abs(brightness - 145)) * 0.05 + seededJitter(seed, 4),
+          empathy: 43 + regions.bottom.value * 1.1 + warm * 18 + regions.rightLower.value * 0.48 + seededJitter(seed, 5)
+        };
+
+        const scores = Object.fromEntries(Object.entries(rawScores).map(([key, value]) => [key, round(value)]));
+
+        const linePowers = {
+          life: round(44 + regions.leftLower.value * 1.2 + warm * 17 + balance * 14 + seededJitter(seed, 6)),
+          head: round(43 + regions.middle.value * 1.3 + contrast * 0.36 + horizontalTotal / Math.max(1, edgeCount) * 0.35 + seededJitter(seed, 7)),
+          heart: round(42 + regions.top.value * 1.15 + warm * 14 + regions.right.value * 0.28 + seededJitter(seed, 8)),
+          fate: round(40 + regions.center.value * 1.28 + verticalBias * 22 + contrast * 0.22 + seededJitter(seed, 9)),
+          sun: round(38 + regions.upperRight.value * 1.16 + saturation * 25 + contrast * 0.18 + seededJitter(seed, 10)),
+          mercury: round(39 + regions.right.value * 1.08 + edgeAvg * 0.42 + seededJitter(seed, 11)),
+          venus: round(41 + regions.leftLower.value * 0.9 + warm * 24 + brightness * 0.08 + seededJitter(seed, 12)),
+          luna: round(41 + regions.rightLower.value * 0.96 + cool * 20 + saturation * 14 + seededJitter(seed, 13))
+        };
+
+        return {
+          scores,
+          linePowers,
+          features: {
+            brightness: round(brightness / 2.55),
+            contrast: round(contrast),
+            edge: round(edgeAvg * 2.2),
+            warmth: round(warm * 100),
+            saturation: round(saturation * 100),
+            balance: round(balance * 100)
+          }
+        };
+      }
+
+      function chooseType(scores) {
+        return typeData
+          .map((type) => ({ type, value: type.condition(scores) }))
+          .sort((a, b) => b.value - a.value)[0].type;
+      }
+
+      function strongestKey(object) {
+        return Object.entries(object).sort((a, b) => b[1] - a[1])[0][0];
+      }
+
+      function strengthWord(value) {
+        if (value >= 84) return "とても強い";
+        if (value >= 70) return "しっかり出ている";
+        if (value >= 56) return "穏やかに出ている";
+        return "これから育つ";
+      }
+
+      function buildLineReadings(reading) {
+        const lp = reading.linePowers;
+        const s = reading.scores;
+        return [
+          {
+            name: "生命線",
+            text: `${strengthWord(lp.life)}印象。ここでは寿命ではなく、日々を動かす土台のエネルギーとして読みます。${lp.life >= 72 ? "小さな行動を続けるほど運が太くなります。" : "休み方を整えると行動運が戻りやすい流れです。"}`
+          },
+          {
+            name: "知能線",
+            text: `${strengthWord(lp.head)}印象。思考の輪郭、判断、才能の使い方を示します。${s.creativity > s.stability ? "発想を形にする企画脳が強めです。" : "情報を整理して安定した答えを出す力があります。"}`
+          },
+          {
+            name: "感情線",
+            text: `${strengthWord(lp.heart)}印象。愛情表現や対人感度の象徴です。${s.empathy >= 72 ? "人の感情を受け取り、安心感を返す力が出ています。" : "距離感を大切にしながら、必要な人と深くつながるタイプです。"}`
+          },
+          {
+            name: "運命線",
+            text: `${strengthWord(lp.fate)}印象。仕事の方向性や転機を示す線として読みます。${s.action >= 70 ? "自分で道を作る実行運が出ています。" : "流れを待つより、選択肢を1つ絞ると前へ進みます。"}`
+          },
+          {
+            name: "太陽線",
+            text: `${strengthWord(lp.sun)}印象。創作、評価、発信の象徴です。${lp.sun >= 70 ? "作品や投稿が人の目に留まりやすい流れがあります。" : "見せ方を整えることで評価運が育ちます。"}`
+          },
+          {
+            name: "水星線",
+            text: `${strengthWord(lp.mercury)}印象。言葉、商才、伝える力の象徴です。${lp.mercury >= 70 ? "説明・販売・相談の場で強みが出ます。" : "短い言葉で伝える練習がチャンス運を上げます。"}`
+          },
+          {
+            name: "金星丘",
+            text: `${strengthWord(lp.venus)}印象。温かさ、魅力、包容力を示します。${lp.venus >= 72 ? "人に安心感を渡せる柔らかい魅力があります。" : "自分を満たす時間を増やすと対人運が整います。"}`
+          },
+          {
+            name: "月丘",
+            text: `${strengthWord(lp.luna)}印象。想像力、直感、物語性を示します。${lp.luna >= 72 ? "目に見えない空気を読むセンスが強く出ています。" : "気になった景色や言葉を記録すると直感が育ちます。"}`
+          }
+        ];
+      }
+
+      function buildCombos(reading) {
+        const lp = reading.linePowers;
+        const combos = [];
+
+        const add = (score, title, text) => combos.push({ score, title, text });
+
+        add(lp.head + lp.fate, "知能線 × 運命線", "考えたことを現実の計画へ落とし込む組み合わせ。AI活用、企画、設計、仕事の仕組み化と相性があります。");
+        add(lp.heart + lp.mercury, "感情線 × 水星線", "人の気持ちを言葉にする組み合わせ。SNS、文章、接客、相談、レビュー発信で魅力が出ます。");
+        add(lp.life + lp.fate, "生命線 × 運命線", "動きながら道を作る組み合わせ。完璧な準備より、小さく始めて継続するほど流れが強くなります。");
+        add(lp.sun + lp.fate, "太陽線 × 運命線", "才能が評価や仕事につながる組み合わせ。作品、投稿、ポートフォリオ、ブランド化に追い風があります。");
+        add(lp.venus + lp.luna, "金星丘 × 月丘", "温かさと想像力が重なる組み合わせ。癒し、物語、ビジュアル、占い系コンテンツで人を惹きつけます。");
+        add(lp.head + lp.sun, "知能線 × 太陽線", "分析と美意識が並ぶ組み合わせ。デザイン、動画、UI、プロンプト設計のような分野で光ります。");
+
+        return combos.sort((a, b) => b.score - a.score).slice(0, 3);
+      }
+
+      function buildReading(analysis) {
+        const type = chooseType(analysis.scores);
+        const dominantLineKey = strongestKey({
+          life: analysis.linePowers.life,
+          head: analysis.linePowers.head,
+          heart: analysis.linePowers.heart,
+          fate: analysis.linePowers.fate,
+          sun: analysis.linePowers.sun,
+          mercury: analysis.linePowers.mercury
+        });
+        const dominantMountKey = strongestKey({
+          venus: analysis.linePowers.venus,
+          luna: analysis.linePowers.luna,
+          sun: analysis.linePowers.sun,
+          mercury: analysis.linePowers.mercury
+        });
+
+        return {
+          ...analysis,
+          type,
+          dominantLineKey,
+          dominantMountKey,
+          lineReadings: buildLineReadings(analysis),
+          combos: buildCombos(analysis)
+        };
+      }
+
+      function createTextElement(tag, className, text) {
+        const el = document.createElement(tag);
+        if (className) el.className = className;
+        el.textContent = text;
+        return el;
+      }
+
+      function renderResults(reading) {
+        $("typeName").textContent = reading.type.name;
+        $("typeSummary").textContent = reading.type.summary;
+        $("dominantLine").textContent = lineLabels[reading.dominantLineKey];
+        $("dominantMount").textContent = lineLabels[reading.dominantMountKey];
+        $("oracleMood").textContent = reading.type.mood;
+
+        const cardData = [
+          ["性格タイプ", reading.type.cards.personality],
+          ["仕事・才能", reading.type.cards.work],
+          ["恋愛傾向", reading.type.cards.love],
+          ["金運・チャンス運", reading.type.cards.money],
+          ["今週のラッキーアクション", reading.type.cards.action]
+        ];
+        const resultCards = $("resultCards");
+        resultCards.textContent = "";
+        cardData.forEach(([title, text]) => {
+          const card = document.createElement("article");
+          card.className = "oracle-card";
+          card.appendChild(createTextElement("h3", "", title));
+          card.appendChild(createTextElement("p", "", text));
+          resultCards.appendChild(card);
+        });
+
+        const scoreGrid = $("scoreGrid");
+        scoreGrid.textContent = "";
+        scoreNames.forEach(([key, label]) => {
+          const card = document.createElement("article");
+          card.className = "score-card";
+
+          const row = document.createElement("div");
+          row.className = "score-row";
+          row.appendChild(createTextElement("span", "score-name", label));
+          row.appendChild(createTextElement("span", "score-value", `${reading.scores[key]}点`));
+
+          const bar = document.createElement("div");
+          bar.className = "bar";
+          const fill = document.createElement("div");
+          fill.className = "bar-fill";
+          fill.dataset.width = `${reading.scores[key]}%`;
+          bar.appendChild(fill);
+
+          card.appendChild(row);
+          card.appendChild(bar);
+          scoreGrid.appendChild(card);
+        });
+
+        const lineGrid = $("lineGrid");
+        lineGrid.textContent = "";
+        reading.lineReadings.forEach((item) => {
+          const card = document.createElement("article");
+          card.className = "line-reading";
+          card.appendChild(createTextElement("strong", "", item.name));
+          card.appendChild(createTextElement("span", "", item.text));
+          lineGrid.appendChild(card);
+        });
+
+        const comboList = $("comboList");
+        comboList.textContent = "";
+        reading.combos.forEach((item) => {
+          const card = document.createElement("article");
+          card.className = "combo-item";
+          const title = document.createElement("b");
+          title.textContent = item.title;
+          card.appendChild(title);
+          card.appendChild(document.createTextNode(`: ${item.text}`));
+          comboList.appendChild(card);
+        });
+
+        requestAnimationFrame(() => {
+          document.querySelectorAll(".bar-fill").forEach((fill) => {
+            fill.style.width = fill.dataset.width;
+          });
+        });
+      }
+
+      function runAnalysis() {
+        if (!selectedImage) {
+          showToast("先に手の写真を選んでください。");
+          return;
+        }
+        drawContainedImage(analysisCanvas, analysisCtx, selectedImage);
+        progressFill.style.width = "0%";
+        analysisTitle.textContent = analysisSteps[0];
+        analysisCopy.textContent = "手のひらの明るさ、コントラスト、線の密度をブラウザ内で読み取っています。";
+        showScreen("analysis");
+
+        let step = 0;
+        const totalDuration = 4200;
+        const startedAt = performance.now();
+
+        const tick = (now) => {
+          const progress = clamp(((now - startedAt) / totalDuration) * 100);
+          progressFill.style.width = `${progress}%`;
+          const nextStep = Math.min(analysisSteps.length - 1, Math.floor((progress / 100) * analysisSteps.length));
+          if (nextStep !== step) {
+            step = nextStep;
+            analysisTitle.textContent = analysisSteps[step];
+            analysisCopy.textContent = [
+              "写真ごとの光と影の差を、生命線の印象へ変換しています。",
+              "中央の線の密度から、知能線と運命線のバランスを読んでいます。",
+              "上部の線の流れから、感情線と対人感度を照合しています。",
+              "丘の明るさと色味を、金星丘・月丘の印象へ変換しています。",
+              "線同士の組み合わせから、今週のラッキーアクションを整えています。"
+            ][step % 5];
+          }
+
+          if (progress < 100) {
+            requestAnimationFrame(tick);
+            return;
+          }
+
+          try {
+            latestReading = buildReading(analyzeImage(selectedImage));
+          } catch (error) {
+            latestReading = buildReading(fallbackAnalysis());
+            showToast("画像解析が不安定だったため、疑似オラクル結果で表示しました。");
+          }
+          renderResults(latestReading);
+          showScreen("result");
+        };
+
+        requestAnimationFrame(tick);
+      }
+
+      function fallbackAnalysis() {
+        return {
+          scores: {
+            intuition: 72,
+            creativity: 76,
+            action: 68,
+            stability: 70,
+            empathy: 74
+          },
+          linePowers: {
+            life: 71,
+            head: 76,
+            heart: 73,
+            fate: 70,
+            sun: 74,
+            mercury: 69,
+            venus: 72,
+            luna: 75
+          },
+          features: {
+            brightness: 60,
+            contrast: 48,
+            edge: 64,
+            warmth: 58,
+            saturation: 45,
+            balance: 72
+          }
+        };
+      }
+
+      function shareToX() {
+        if (!latestReading) {
+          showToast("結果を作成してからシェアできます。");
+          return;
+        }
+        const text = [
+          "AI手相オラクルで占ってみた",
+          `私のタイプは「${latestReading.type.name}」でした。`,
+          "",
+          "手のひら写真からAI風に性格・仕事運・恋愛傾向を診断できます。",
+          APP_URL,
+          "",
+          "#AI手相オラクル #ChatGPTで作れる #AI占い"
+        ].join("\n");
+        const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+        window.open(url, "_blank", "noopener,noreferrer");
+      }
+
+      function openNote() {
+        window.open(NOTE_URL, "_blank", "noopener,noreferrer");
+      }
+
+      function scrollToTips() {
+        $("tips").scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+
+      function bindEvents() {
+        $("pickFromHero").addEventListener("click", () => {
+          showScreen("upload");
+          setTimeout(chooseImage, 140);
+        });
+        $("howToBtn").addEventListener("click", scrollToTips);
+        $("pickImageBtn").addEventListener("click", chooseImage);
+        $("repickBtn").addEventListener("click", chooseImage);
+        $("analyzeBtn").addEventListener("click", runAnalysis);
+        $("retryBtn").addEventListener("click", () => {
+          resetImage();
+          showScreen("upload");
+        });
+        $("shareBtn").addEventListener("click", shareToX);
+        $("noteBtn").addEventListener("click", openNote);
+
+        fileInput.addEventListener("change", (event) => {
+          const file = event.target.files && event.target.files[0];
+          loadImageFromFile(file);
+        });
+
+        window.addEventListener("resize", () => {
+          if (selectedImage) {
+            drawContainedImage(previewCanvas, previewCtx, selectedImage);
+            drawContainedImage(analysisCanvas, analysisCtx, selectedImage);
+          }
+        });
+      }
+
+      buildStars();
+      bindEvents();
+    })();
+  </script>
+</body>
+</html>
